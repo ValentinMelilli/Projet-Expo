@@ -1,14 +1,57 @@
-import { StyleSheet } from 'react-native';
+import { useContext, useEffect, useState } from 'react';
+import { StyleSheet, Alert } from 'react-native';
+import MapView from 'react-native-maps';
+import * as Location from 'expo-location';
 
-import EditScreenInfo from '../../components/EditScreenInfo';
-import { Text, View } from '../../components/Themed';
+import { View } from '../../components/Themed';
+import { ImagesContext } from '../../components/ImagesContext';
+import CustomMarker from '../../components/CustomMarker';
 
 export default function TabTwoScreen() {
+  const [location, setLocation] = useState<Location.LocationObject>();
+  const images = useContext(ImagesContext);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    })();
+  }, []);
+
+  let region = {
+    latitude: 43.635213,
+    longitude: 3.8292835,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  }
+
+  let key = 0;
+
+  if (location) {
+    region.latitude = location.coords.latitude;
+    region.longitude = location.coords.longitude;
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
+      <MapView
+        loadingEnabled={true}
+        region={region}
+        style={styles.map}
+      >
+        {
+          images.map(img => {
+              key++;
+              return (<CustomMarker key={key} image={img} />)
+          })
+        }
+      </MapView>
     </View>
   );
 }
@@ -19,13 +62,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
+  map: {
+    width: '100%',
+    height: '100%',
+  }
 });
